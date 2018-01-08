@@ -62,8 +62,11 @@ def handle_msg(sock, addr):
             data = None
         if not data:
             break
-        print(parse_data(data))
-        send_msg(sock, b'12121')
+        recieve_str = parse_data(data)
+        print(recieve_str)
+        if recieve_str == 'exit':
+            break
+        send_msg(sock, bytes(recieve_str, 'utf-8'))
     sock.close()
 
     print('Connection from %s:%s closed.' % addr)
