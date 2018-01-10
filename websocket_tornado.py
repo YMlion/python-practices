@@ -3,22 +3,7 @@ import json
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
-
-
-class User():
-    """用户bean"""
-
-    def __init__(self, token):
-        self.token = token
-        self._room_id = None
-
-    @property
-    def room_id(self):
-        return self._room_id
-
-    @room_id.setter
-    def room_id(self, value):
-        self._room_id = value
+from dg_model import User
 
 
 class MsgHandler(tornado.websocket.WebSocketHandler):
@@ -69,6 +54,13 @@ class MsgHandler(tornado.websocket.WebSocketHandler):
                 others = self.get_others()
                 notify_msg = {'code': 250, 'action': 'user_in',
                               'result': self.user.token}
+                MsgHandler.notify_users(others, json.dumps(notify_msg))
+        elif action == 'ready': # 准备
+            game = dict_data['data']
+            if game == 'draw_guess':
+                self.user.game_ready = True
+                others = self.get_others()
+                notify_msg = {'code': 250, 'action': 'user_ready', 'result': self.user.token}
                 MsgHandler.notify_users(others, json.dumps(notify_msg))
         elif action == 'quit_game':  # 退出游戏
             others = self.get_others()
