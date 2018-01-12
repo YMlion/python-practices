@@ -4,6 +4,7 @@ import tornado.ioloop
 import tornado.web
 import tornado.websocket
 from dg_model import User
+import sqlite_connec
 
 
 class MsgHandler(tornado.websocket.WebSocketHandler):
@@ -44,6 +45,14 @@ class MsgHandler(tornado.websocket.WebSocketHandler):
                 self.close()
             else:
                 self.user = User(token)
+                notify_msg = {'code': 250, 'action': 'user_info',
+                              'result': {}}
+                fetch_result = sqlite_connec.fetch_user(token)
+                notify_msg['result']['token'] = fetch_result[0]
+                notify_msg['result']['id'] = fetch_result[1]
+                notify_msg['result']['name'] = fetch_result[2]
+                notify_msg['result']['avatar'] = fetch_result[3]
+                self.write_message(json.dumps(notify_msg))
         elif action == 'start':  # 开始游戏
             game = dict_data['data']
             if game == 'draw_guess':
