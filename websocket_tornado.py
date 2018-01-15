@@ -33,7 +33,7 @@ class MsgHandler(tornado.websocket.WebSocketHandler):
 
     def write_error(self, code, action):
         error_msg = {'code': code, 'action': action,
-                              'data': 'error'}
+                     'data': 'error'}
         self.write_message(json.dumps(error_msg))
 
     def on_message(self, message):
@@ -47,7 +47,7 @@ class MsgHandler(tornado.websocket.WebSocketHandler):
             print('the user token is ' + token)
             if not token or token == '':
                 self.write_error(101, 'token')
-                #self.close()
+                # self.close()
             else:
                 fetch_result = sqlite_connec.fetch_user(token)
                 if fetch_result is None:
@@ -60,7 +60,8 @@ class MsgHandler(tornado.websocket.WebSocketHandler):
                 notify_msg['data']['name'] = fetch_result[2]
                 notify_msg['data']['avatar'] = fetch_result[3]
                 self.write_message(json.dumps(notify_msg))
-                self.user = User(token, fetch_result[1], fetch_result[2], fetch_result[3])
+                self.user = User(
+                    token, fetch_result[1], fetch_result[2], fetch_result[3])
         elif action == 'start':  # 开始游戏
             game = dict_data['data']
             if game == 'draw_guess':
@@ -81,12 +82,13 @@ class MsgHandler(tornado.websocket.WebSocketHandler):
                 notify_msg = {'code': 250, 'action': 'user_in',
                               'data': self.user.get_json_text()}
                 MsgHandler.notify_users(others, json.dumps(notify_msg))
-        elif action == 'ready': # 准备
+        elif action == 'ready':  # 准备
             game = dict_data['data']
             if game == 'draw_guess':
                 self.user.game_ready = True
                 others = self.get_others()
-                notify_msg = {'code': 250, 'action': 'user_ready', 'data': self.user.id_num}
+                notify_msg = {'code': 250, 'action': 'user_ready',
+                              'data': self.user.id_num}
                 MsgHandler.notify_users(others, json.dumps(notify_msg))
         elif action == 'quit_game':  # 退出游戏
             others = self.get_others()
@@ -94,6 +96,12 @@ class MsgHandler(tornado.websocket.WebSocketHandler):
                           'data': self.user.id_num}
             MsgHandler.notify_users(others, json.dumps(notify_msg))
             self.user = None
+
+        elif action == 'msg_text':
+            others = self.get_others()
+            notify_msg = {'code': 250, 'action': 'notify_msg_text',
+                          'data': dict_data['data']}
+            MsgHandler.notify_users(others, json.dumps(notify_msg))
 
     def on_close(self):
         MsgHandler.users.remove(self)
