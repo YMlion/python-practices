@@ -124,10 +124,7 @@ class MsgHandler(tornado.websocket.WebSocketHandler):
             self.user = None
 
         elif action == 'msg_text':
-            others = self.get_others()
-            notify_msg = {'code': 250, 'action': 'notify_msg_text',
-                          'data': dict_data['data']}
-            MsgHandler.notify_users(others, json.dumps(notify_msg))
+            MsgHandler.send_chat_msgs(self.get_all_users(), 0, dict_data['data'], self.user)
 
     def on_close(self):
         MsgHandler.users.remove(self)
