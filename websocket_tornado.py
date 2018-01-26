@@ -5,6 +5,7 @@ import tornado.web
 import tornado.websocket
 from dg_model import User
 import sqlite_connec
+import time
 
 
 class MsgHandler(tornado.websocket.WebSocketHandler):
@@ -21,15 +22,36 @@ class MsgHandler(tornado.websocket.WebSocketHandler):
         print("WebSocket opened")
 
     @staticmethod
-    def notify_users(others, msg):
+    def notify_users(room_users, msg):
         """推送消息给用户"""
-        for handler in others:
+        for handler in room_users:
             handler.write_message(msg)
+
+    @staticmethod
+    def send_chat_msgs(room_users, msg_type, content, who):
+        """推送聊天消息给用户
+        msg_type: 0：文本；1：图片；2：语音"""
+        msg = {'code': 250, 'action': 'chat_msg',
+               'data': {'type': msg_type, 'text': content, 'time': int(time.time() * 1000)}}
+        if who is None:
+            msg['data']['userName'] = '法官'
+            msg['data']['userId'] = '0'
+        else:
+            msg['data']['userName'] = who.name
+            msg['data']['userId'] = who.avatar
+            msg['data']['userId'] = who.id_num
+        json_msg = json.dumps(msg)
+        for handler in room_users:
+            handler.write_message(json_msg)
 
     def get_others(self):
         """获取当前房间其他用户"""
         # filter方法或者列表推导式，filter稍微复杂点
         return [h for h in MsgHandler.users if h.user is not None and h.user != self.user and h.user.room_id == self.user.room_id]
+
+    def get_all_users(self):
+        """获取当前房间所有用户"""
+        return [h for h in MsgHandler.users if h.user is not None and h.user.room_id == self.user.room_id]
 
     def write_error(self, code, action):
         error_msg = {'code': code, 'action': action,
@@ -82,6 +104,8 @@ class MsgHandler(tornado.websocket.WebSocketHandler):
                 notify_msg = {'code': 250, 'action': 'user_in',
                               'data': self.user.get_json_text()}
                 MsgHandler.notify_users(others, json.dumps(notify_msg))
+                MsgHandler.send_chat_msgs(
+                    others, 0, '欢迎' + self.user.name, None)
         elif action == 'ready':  # 准备
             game = dict_data['data']
             if game == 'draw_guess':
@@ -95,6 +119,8 @@ class MsgHandler(tornado.websocket.WebSocketHandler):
             notify_msg = {'code': 250, 'action': 'user_quit',
                           'data': self.user.id_num}
             MsgHandler.notify_users(others, json.dumps(notify_msg))
+            MsgHandler.send_chat_msgs(
+                    others, 0, self.user.name + '退出了', None)
             self.user = None
 
         elif action == 'msg_text':
@@ -110,9 +136,11 @@ class MsgHandler(tornado.websocket.WebSocketHandler):
 
 def main():
     """main方法"""
+    print('server starting...')
     app = tornado.web.Application([(r"/", MsgHandler), ])
     app.listen(8002, '10.32.8.172')
     tornado.ioloop.IOLoop.instance().start()
+    
 
 
 if __name__ == '__main__':
