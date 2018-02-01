@@ -1,11 +1,13 @@
 """use tornado to implement websocket"""
 import json
+import time
+
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
-from dg_model import User
 import sqlite_connec
-import time
+
+from dg_model import User
 
 
 class MsgHandler(tornado.websocket.WebSocketHandler):
@@ -90,7 +92,8 @@ class MsgHandler(tornado.websocket.WebSocketHandler):
                 # 返回room相关信息和玩家列表
                 result = {'code': 250, 'action': 'start_room', 'data': {}}
                 # 房间信息
-                room_info = {'id': 6666, 'game': 'draw_guess', 'started': False}
+                room_info = {'id': 6666,
+                             'game': 'draw_guess', 'started': False}
                 room_users = []
                 for room_user in MsgHandler.users:
                     if room_user.user is not None and room_user.user.room_id == room_info['id']:
@@ -120,11 +123,12 @@ class MsgHandler(tornado.websocket.WebSocketHandler):
                           'data': self.user.id_num}
             MsgHandler.notify_users(others, json.dumps(notify_msg))
             MsgHandler.send_chat_msgs(
-                    others, 0, self.user.name + '退出了', None)
+                others, 0, self.user.name + '退出了', None)
             self.user = None
 
         elif action == 'msg_text':
-            MsgHandler.send_chat_msgs(self.get_all_users(), 0, dict_data['data'], self.user)
+            MsgHandler.send_chat_msgs(
+                self.get_all_users(), 0, dict_data['data'], self.user)
 
     def on_close(self):
         MsgHandler.users.remove(self)
@@ -137,7 +141,6 @@ def main():
     app = tornado.web.Application([(r"/", MsgHandler), ])
     app.listen(8002, '10.32.8.172')
     tornado.ioloop.IOLoop.instance().start()
-    
 
 
 if __name__ == '__main__':
