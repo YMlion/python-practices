@@ -90,7 +90,7 @@ class MsgHandler(tornado.websocket.WebSocketHandler):
                 # 返回room相关信息和玩家列表
                 result = {'code': 250, 'action': 'start_room', 'data': {}}
                 # 房间信息
-                room_info = {'id': 6666, 'game': 'draw_guess'}
+                room_info = {'id': 6666, 'game': 'draw_guess', 'started': False}
                 room_users = []
                 for room_user in MsgHandler.users:
                     if room_user.user is not None and room_user.user.room_id == room_info['id']:
